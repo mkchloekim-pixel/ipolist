@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>IPO 대시보드 · 뉴스 자동화 & 업데이트 보고서</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --text:#1a1f2e;--text2:#4a5270;--text3:#8b93a8;--border:#e4e8ef;--border2:#cdd3de;
+    --bg3:#f1f3f7;--vert:#4361ee;
+    --font:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif;--mono:'DM Mono',monospace;
+  }
+  @page{ size:A4; margin:14mm; }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{font-family:var(--font);color:var(--text);font-size:10.5px;line-height:1.6;background:#fff;}
+  .wrap{max-width:182mm;margin:0 auto;}
+
+  /* Header */
+  .rep-head{border-bottom:3px solid var(--vert);padding-bottom:14px;margin-bottom:20px;}
+  .rep-head h1{font-size:22px;font-weight:700;letter-spacing:-.03em;}
+  .rep-head .sub{font-size:11px;color:var(--text3);margin-top:5px;font-family:var(--mono);}
+  .rep-head .meta{font-size:10px;color:var(--text2);margin-top:8px;}
+
+  h2{font-size:15px;font-weight:700;margin:22px 0 10px;padding-left:9px;border-left:4px solid var(--vert);letter-spacing:-.02em;}
+  p.lead{font-size:11px;color:var(--text2);margin-bottom:12px;}
+
+  /* Flow */
+  .flow{display:flex;align-items:stretch;gap:6px;margin:12px 0 16px;}
+  .step{flex:1;background:#f8f9fb;border:1px solid var(--border);border-radius:8px;padding:9px 8px;position:relative;}
+  .step .n{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--vert);color:#fff;font-size:9px;font-weight:700;text-align:center;line-height:16px;margin-bottom:5px;}
+  .step .st{font-size:9.5px;font-weight:600;line-height:1.4;}
+  .step .sd{font-size:8.5px;color:var(--text3);margin-top:3px;line-height:1.35;}
+  .arrow{align-self:center;color:var(--border2);font-size:14px;font-weight:700;flex-shrink:0;}
+
+  /* Spec table */
+  table.spec{width:100%;border-collapse:collapse;margin:10px 0 6px;}
+  table.spec th{width:140px;text-align:left;background:var(--bg3);border:1px solid var(--border);padding:7px 10px;font-size:10px;font-weight:600;color:var(--text2);vertical-align:top;}
+  table.spec td{border:1px solid var(--border);padding:7px 10px;font-size:10px;color:var(--text);vertical-align:top;}
+
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:9px 12px;font-size:10px;color:#92660b;margin-top:8px;}
+  .note b{color:#7a5409;}
+
+  /* News section */
+  .sector{margin-top:16px;}
+  .sector-h{display:flex;align-items:center;gap:8px;margin:14px 0 8px;}
+  .sbadge{font-size:11px;font-weight:700;padding:3px 11px;border-radius:5px;border:1px solid;}
+  .scount{font-size:10px;color:var(--text3);font-family:var(--mono);}
+
+  .card{border:1px solid var(--border);border-radius:9px;padding:0 0 4px;margin-bottom:9px;overflow:hidden;page-break-inside:avoid;}
+  .card-h{display:flex;align-items:baseline;gap:8px;padding:8px 12px;background:#fafbfd;border-bottom:2px solid;}
+  .cname{font-size:12.5px;font-weight:700;}
+  .ctype{font-size:9px;color:var(--text3);}
+  .ccount{font-size:9.5px;font-weight:600;margin-left:auto;font-family:var(--mono);}
+
+  .news{padding:7px 12px;border-top:1px solid #f0f2f7;}
+  .news:first-of-type{border-top:none;}
+  .news-top{display:flex;gap:8px;align-items:baseline;}
+  .date{font-family:var(--mono);font-size:9px;color:var(--text3);white-space:nowrap;flex-shrink:0;background:var(--bg3);padding:1px 6px;border-radius:4px;}
+  .hl{font-size:10.5px;font-weight:600;line-height:1.45;}
+  .sum{font-size:9.5px;color:var(--text2);margin-top:4px;line-height:1.55;}
+  .tags{margin-top:5px;display:flex;gap:4px;flex-wrap:wrap;}
+  .tag{font-size:8px;font-weight:600;padding:1px 6px;border-radius:3px;border:1px solid;}
+  .t-biz{background:#fffbeb;color:#d97706;border-color:#fde68a;}
+  .t-ipo{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;}
+  .t-invest{background:#ecfdf5;color:#059669;border-color:#a7f3d0;}
+  .t-global{background:#f5edfd;color:#9333ea;border-color:#d8b4fe;}
+  .t-risk{background:#fef2f2;color:#dc2626;border-color:#fecaca;}
+  .empty{padding:9px 12px;font-size:9.5px;color:var(--text3);font-style:italic;}
+
+  footer{margin-top:22px;padding-top:12px;border-top:1px solid var(--border);font-size:9px;color:var(--text3);text-align:center;line-height:1.7;}
+  @media print{ html,body,*{-webkit-print-color-adjust:exact;print-color-adjust:exact;} body{font-size:10px;} .step{break-inside:avoid;} .card{break-inside:avoid;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="rep-head">
+    <h1>상장예정사 뉴스 자동화 &amp; 업데이트 보고서</h1>
+    <div class="sub">IPO Pipeline Monitor · News Automation Report</div>
+    <div class="meta">수집 시각: 2026-06-09T09:48:36.825Z (UTC) · 대상 16개사 · 자동수집 64건</div>
+  </div>
+
+  <h2>1. 뉴스 업데이트 방식 (자동화)</h2>
+  <p class="lead">대시보드의 "최신 뉴스"는 <b>별도 서버 없이</b> GitHub Actions로 매일 자동 갱신됩니다.
+     사람이 손대지 않아도 매일 아침 최신 상태로 유지되며, 모든 변경 이력은 GitHub에 기록됩니다.</p>
+
+  <div class="flow">
+    <div class="step"><span class="n">1</span><div class="st">매일 07:00 (KST) 자동 실행</div><div class="sd">GitHub Actions 스케줄러 + 수동 실행 가능</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="n">2</span><div class="st">네이버 뉴스 수집·정제</div><div class="sd">16개사 검색, HTML 정리·태그 부여</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="n">3</span><div class="st">news.json 갱신</div><div class="sd">관련도순 + 키워드 필터로 선별</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="n">4</span><div class="st">변경 시에만 자동 커밋</div><div class="sd">내용이 바뀐 날만 기록</div></div>
+    <span class="arrow">→</span>
+    <div class="step"><span class="n">5</span><div class="st">Netlify 자동 재배포</div><div class="sd">대시보드에 즉시 반영</div></div>
+  </div>
+
+  <table class="spec">
+    <tr><th>업데이트 주기</th><td>매일 1회 · 오전 7시(한국시간) 자동 실행 + 필요 시 수동 실행</td></tr>
+    <tr><th>뉴스 출처</th><td>네이버 뉴스 검색 API</td></tr>
+    <tr><th>수집 대상</th><td>버티컬 5 · 뷰티 8 · 패션 3 = 총 16개 상장예정사</td></tr>
+    <tr><th>기업당 뉴스</th><td>최대 4건 (전체 최대 64건)</td></tr>
+    <tr><th>검색 방식</th><td>관련도순(sort=sim) 조회 후, 회사명·대표 브랜드 <b>필수 키워드 필터</b>로 노이즈 제거 → 관련 기사 중 최신순 4건</td></tr>
+    <tr><th>검색 기간</th><td>네이버 API는 날짜 범위 옵션이 없어 <b>기간 제한 없이</b> 관련 기사 중 최신순으로 선별 (옵션: 스크립트에서 "최근 N개월 이내"로 제한 가능)</td></tr>
+    <tr><th>자동 분류</th><td>제목·본문 키워드로 태그 부여 — IPO / 투자 / 사업 / 글로벌 / 리스크</td></tr>
+    <tr><th>안전장치</th><td>수집 실패·결과 0건 시 기존 큐레이션 뉴스로 자동 폴백 (화면이 비지 않음). 보안: 외부 텍스트·링크는 표시 전 이스케이프</td></tr>
+  </table>
+
+  <div class="note"><b>참고 ·</b> 뉴스가 적은 기업은 4건이 다 채워지지 않거나, 다소 오래된(관련성 높은) 기사가 포함될 수 있습니다.
+     "최근 N개월" 기간 컷을 적용하면 신선도는 올라가지만, 일부 기업은 표시 건수가 줄어들 수 있습니다.</div>
+
+  <h2>2. 이번에 업데이트된 뉴스 (총 64건)</h2>
+  <p class="lead">아래는 이번 자동수집으로 대시보드에 반영된 실제 뉴스입니다. (기업명 · 발행월 · 제목 · 요약 · 분류 태그)</p>
+  
+    <section class="sector">
+      <div class="sector-h">
+        <span class="sbadge" style="background:#eef0fd;color:#4361ee;border-color:#c7d0fb">버티컬 커머스</span>
+        <span class="scount">5개사</span>
+      </div>
+      
+      <div class="card">
+        <div class="card-h" style="border-color:#c7d0fb">
+          <span class="cname">무신사</span>
+          <span class="ctype">패션 버티컬</span>
+          <span class="ccount" style="color:#4361ee">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">&quot;출근룩 추천해줘&quot;…무신사, 챗GPT 전용 앱 출시</span>
+          </div>
+          <div class="sum">대화형 AI 커머스 공략 무신사가 오픈AI의 대화형 인공지능(AI) 플랫폼 챗GPT에 무신사 전용 앱을 출시하고 글로벌 AI 기반 패션·뷰티 커머스 시장 공략에 나선다고 9일 밝혔다. 이번 서비스는 지난 3월 카카오와 협업해...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">&quot;검색에서 대화로&quot; 무신사, 챗GPT 전용 앱 출시</span>
+          </div>
+          <div class="sum">무신사는 오픈AI(OpenAI)의 대화형 AI 플랫폼 서비스인 &#39;챗GPT&#39;에 무신사 앱을 선보인다고 9일 밝혔다. 무신사는 지난 3월 카카오와 손잡고 카카오톡 내에서 AI가 스타일을 추천해 주는 &#39;챗지피티 포 카카오&#39; 서비스를...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">무신사, 챗GPT 안으로 들어갔다…글로벌 AI 패션·뷰티 쇼핑 공략</span>
+          </div>
+          <div class="sum">무신사가 오픈AI의 챗GPT 플랫폼에 전용 앱을 선보이며 글로벌 AI 커머스 시장 공략에 나선다. 상품명을 직접... 무신사는 오픈AI의 대화형 인공지능(AI) 플랫폼 챗GPT에 무신사 앱 서비스를 출시하고 본격적인 운영에...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">&quot;출근 룩 추천해줘&quot;…AI 영토 확장하는 무신사</span>
+          </div>
+          <div class="sum">무신사가 오픈AI의 대화형 인공지능(AI) 플랫폼 챗GPT에 자사 앱을 출시한다고 9일 밝혔다. 이번 서비스 출시를 통해 무신사는 국내를 넘어 글로벌 이용자를 대상으로 고객 접점을 확대하게 됐다. 앞서 회사는 지난 3월...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#c7d0fb">
+          <span class="cname">컬리</span>
+          <span class="ctype">식품 버티컬</span>
+          <span class="ccount" style="color:#4361ee">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">공정위, 유통 실태 점검 착수⋯온라인 &#39;거래의존도&#39; 들여다본다</span>
+          </div>
+          <div class="sum">쿠팡·컬리·무신사 등 주요 이커머스가 조사 대상에 포함됐다. 공정위는 이같은 내용의 &#39;2026년 유통·대리점 분야 서면실태조사&#39;를 실시한다고 8일 밝혔다. 유통 분야에서는 백화점, 면세점, 대형마트·기업형슈퍼마켓...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">흑자 달성 컬리, AI 스타트업 원지랩스 인수</span>
+          </div>
+          <div class="sum">이 기사는 06월 01일 11:13 마켓인사이트에 게재된 기사입니다. 신선식품 새벽배송 플랫폼 컬리가 AI 스타트업 원지랩스(1z Labs)를 인수한다. 지난해 컬리가 창사 이래 첫 흑자를 달성한 이후 단행한 인수합병(M&amp;A)이다....</div>
+          <div class="tags"><span class="tag t-invest">투자</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">&#39;AI에 사활&#39; 컬리, 원지랩스 인수의 의미</span>
+          </div>
+          <div class="sum">마켓컬리를 운영하는 컬리가 AI 솔루션 기업 원지랩스(1Z LABS)를 완전자회사로 인수했다. 지난 1일 공시에 따르면 소규모 주식교환 방식으로 진행되고, 오는 8월 4일 교환이 완료되는 시점에 원지랩스는 컬리의 100...</div>
+          <div class="tags"><span class="tag t-invest">투자</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[마켓+]&#39;속도보다 품질&#39;…온라인 신선식품 시장 경쟁 &#39;가열&#39;</span>
+          </div>
+          <div class="sum">9일 업계에 따르면, 컬리와 오아시스마켓 등 신선식품 특화 이커머스 기업들은 지난해 역대 최대 매출을 달성하며 가파른 성장세를 보이고 있다. 컬리는 전국 농축수산 업자들과의 네트워크와 재고 관리 시스템을 통해...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#c7d0fb">
+          <span class="cname">오늘의집</span>
+          <span class="ctype">홈 인테리어</span>
+          <span class="ccount" style="color:#4361ee">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">여름 가전부터 신선식품까지…오늘의집, &#39;집요한세일&#39; 개최</span>
+          </div>
+          <div class="sum">오늘의집은 여름 필수 아이템부터 트렌디한 인테리어 아이템으로 구성된 상반기 최대 쇼핑 기획전... 등 오늘의집 이용자에게 인기를 얻고 있는 상품들이 대거 참여해 특별 할인가에 판매된다. 인기 브랜드를 집중...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">오늘의집, 상반기 최대 쇼핑 축제 &#39;집요한세일&#39; 선보여</span>
+          </div>
+          <div class="sum">오늘의집은 상반기 최대 쇼핑 축제 &#39;집요한세일&#39;을 개최하고 역대급 규모의 특가 상품과 폭넓은 할인 혜택을... 정운영 오늘의집 커머스부문 총괄은 &quot;상반기 최대 쇼핑 축제라는 타이틀에 걸맞게 유저들이 가장 필요로...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">오늘의집, 상반기 최대 쇼핑축제 &#39;집요한세일&#39; 개막</span>
+          </div>
+          <div class="sum">사진=오늘의집 오늘의집이 상반기 최대 쇼핑 행사인 &#39;집요한세일&#39;을 개최하고 여름 시즌 인기 상품을 중심으로 대규모 할인 프로모션을 진행한다. 오늘의집은 8일부터 21일까지 진행되는 &#39;집요한세일&#39; 본행사를 통해...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">오늘의집 &#39;집요한세일&#39; 개최…여름 인테리어 특가</span>
+          </div>
+          <div class="sum">오늘의집 | 서울=한스경제 김종효 기자 | 오늘의집은 상반기 최대 쇼핑 축제 &#39;집요한세일&#39;을 시작했다고 9일 밝혔다. 이번 행사는 21일까지 열린다. 여름 필수 상품과 인테리어 아이템을 대규모 특가와 다양한 할인...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#c7d0fb">
+          <span class="cname">오아시스</span>
+          <span class="ctype">유기농 식품</span>
+          <span class="ccount" style="color:#4361ee">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[마켓+]&#39;속도보다 품질&#39;…온라인 신선식품 시장 경쟁 &#39;가열&#39;</span>
+          </div>
+          <div class="sum">9일 업계에 따르면, 컬리와 오아시스마켓 등 신선식품 특화 이커머스 기업들은 지난해 역대 최대 매출을 달성하며 가파른 성장세를 보이고 있다. 컬리는 전국 농축수산 업자들과의 네트워크와 재고 관리 시스템을 통해...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">&#39;흑자 전환&#39; 컬리, &#39;티몬 인수&#39; 오아시스…두번째 IPO 이번엔?</span>
+          </div>
+          <div class="sum">신선식품 새벽배송을 경쟁력으로 성장한 &#39;컬리&#39;와 &#39;오아시스(플랫폼명 오아시스마켓)&#39;. 두 플랫폼은 &#39;제2의 쿠팡&#39;을 꿈꾸며 앞다퉈 기업공개(IPO)를 추진했다. 2022년 8월과 12월 각각 한국거래소의 상장예비심사를...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span><span class="tag t-invest">투자</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">신선식품 넘어 AI로…컬리·오아시스, 몸값 재평가 승부수</span>
+          </div>
+          <div class="sum">신선식품 새벽배송 시장을 대표하는 컬리와 오아시스마켓이 AI(인공지능)를 앞세워 수익성 경쟁에 나섰다. 새벽배송 시장이 성숙기에 접어든 가운데 AI를 활용한 운영 효율화와 고객 경험 혁신으로 새로운 성장 동력을...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">오아시스 &#39;AI 혁신&#39; 성과…1분기 영업익 32% 증가</span>
+          </div>
+          <div class="sum">신선식품 e커머스 기업인 오아시스마켓이 인공지능(AI) 기술을 접목한 물류·유통 혁신을 기반으로 15년 연속 흑자 기조를 이어갔다. 오아시스마켓은 올해 1분기 매출 1393억원, 영업이익 83억원을 기록했다고 14일...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#c7d0fb">
+          <span class="cname">구다이글로벌</span>
+          <span class="ctype">K-뷰티 버티컬</span>
+          <span class="ccount" style="color:#4361ee">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">구다이글로벌, 올리브영 이끈 구창근 공동대표 영입</span>
+          </div>
+          <div class="sum">올영 플랫폼 고도화 이끌며 옴니채널 전환 평가 천주혁 대표와 공동 리더십…&quot;글로벌 공략 박차&quot; 뷰티 브랜드 조선미녀와 티르티르 등을 보유한 구다이글로벌이 구창근 신임 공동대표이사를 선임했다. 8일 관련 업계에...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">IPO 준비나선 구다이글로벌…CJ 출신 구창근 공동 대표 선임</span>
+          </div>
+          <div class="sum">화장품 브랜드 &#39;조선미녀&#39; 등을 보유한 뷰티 플랫폼 기업 구다이글로벌이 구창근 전 CJ ENM 대표를 신임 공동대표이사로 선임했다. 구다이글로벌은 2016년 12월 창립 이후 천주혁 대표 단독 체제를 유지하다 창사 10년...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">구다이글로벌, 구창근 신임 공동 대표이사 선임</span>
+          </div>
+          <div class="sum">천주혁 대표 단독체제서 10년 만에 공동체제 전환 &#39;조선미녀&#39; 브랜드로 잘 알려진 뷰티 기업 구다이글로벌은 구창근 신임 공동 대표이사를 선임했다고 7일 밝혔다. 구 신임 대표는 삼성증권 애널리스트를 거쳐 CJ그룹에...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">구다이글로벌, CJ 출신 구창근 신임 공동대표 선임</span>
+          </div>
+          <div class="sum">제공= 구다이글로벌구다이글로벌이 구창근 신임 공동대표이사를 선임하며 창사 10년 만에 공동대표 체제로 전환한다.8일 구다이글로벌에 따르면 회사는 2016년 12월 창립 이후 천주혁 대표 단독 체제를 유지한 지 10년...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="sector">
+      <div class="sector-h">
+        <span class="sbadge" style="background:#edfaf8;color:#0d9488;border-color:#99e6e0">뷰티</span>
+        <span class="scount">8개사</span>
+      </div>
+      
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">비나우</span>
+          <span class="ctype">멀티 브랜드</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.03</span>
+            <span class="hl">[히든챔피언②] &#39;넘버즈인·퓌&#39; 띄운 비나우, K뷰티 신흥 강자 우뚝</span>
+          </div>
+          <div class="sum">2019년 론칭한 넘버즈인은 제품력을 앞세워 국내외 소비자 입소문을 탔다. 2021년 선보인 퓌는 독창적인 색조 라인으로 빠르게 팬덤을 넓혔다. 비나우는 대부분 인디 브랜드가 한 카테고리에 집중하는 것과 달리...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.03</span>
+            <span class="hl">K-뷰티 &#39;비나우&#39; 김대영 대표, 충남대에 1억 원 쾌척</span>
+          </div>
+          <div class="sum">지난 2018년 설립된 화장품 스타트업 비나우는 &#39;넘버즈인(numbuzin)&#39;과 &#39;퓌(fwee)&#39; 등 인기 브랜드를 운영하며 국내외 시장에서 가파른 성장세를 보이고 있다. 현재 미국, 일본, 대만 등 전 세계 16개국에 진출하며 글로벌 K-뷰티...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2025.10</span>
+            <span class="hl">[더벨]하나금융 클럽원 VVIP, 비나우 베팅…K-뷰티 정조준</span>
+          </div>
+          <div class="sum">비나우는 &#39;넘버즈인(Numbuzin)&#39; 브랜드를 앞세워 스킨케어 시장에서 빠르게 성장하고 있는 기업이다. 팬데믹 이후 온라인 채널 기반 매출 확장을 통해 지난해 연매출 2000억원을 돌파했다. 지난해 말 기준 매출 약...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2025.08</span>
+            <span class="hl">넘버즈인 앞세워 세계 사로잡은 비나우…신주투자 없이 &#39;유니콘&#39; 등극 [...</span>
+          </div>
+          <div class="sum">기초 스킨케어 제품 중심의 &#39;넘버즈인&#39;과 색조 메이크업 제품으로 구성된 &#39;퓌&#39;가 대표 브랜드다. 전체 매출의 70% 이상이 미국과 일본, 동남아 등 해외에서 나오고 있는 것이 특징이다. 비나우에 대한 투자를 검토 중인...</div>
+          <div class="tags"><span class="tag t-invest">투자</span><span class="tag t-global">글로벌</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">그레이스</span>
+          <span class="ctype">글로벌 뷰티 유통</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">그레이스, 80개국에 ‘뷰티 고속도로’ 연 브랜드 길잡이 [글로벌 K뷰티...</span>
+          </div>
+          <div class="sum">그레이스는 코스트코(Costco)와 얼타뷰티(Ulta Beauty) 벤더 코드를 확보했다. 벤더 코드는 대형 유통사에 직접 납품할 수 있는 공식 공급사 자격이다. 중간 유통 단계를 줄이면 납품 속도와 가격 경쟁력을 높일 수 있다....</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">브랜드 흥행 다음은 ODM…비앤비코리아, K뷰티 제조 밸류 시험대 [IPO 엑...</span>
+          </div>
+          <div class="sum">브랜드사와 그레이스 등 유통사도 상장을 준비 중인 것으로 알려졌다. 비앤비코리아는 이 같은 흐름 속에서 K뷰티 제조사의 기업가치를 시험하는 사례에 가깝다는 평가다. 핵심은 고객 브랜드의 해외 성장세가...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">코스노리, 올리브영 미국 온·오프라인 동시 진출…K뷰티 대표 브랜드로...</span>
+          </div>
+          <div class="sum">그레이스클럽의 글로벌 뷰티 브랜드 코스노리(COSNORI)가 올리브영 미국 온라인몰과 오프라인 매장에 공식... 온라인과 오프라인 유통 채널을 동시에 확보함으로써 브랜드 접근성을 높이고 고객 접점을 한층 강화했다는...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">그레이스, 일본 드럭스토어 중심 유통망 확장 추진</span>
+          </div>
+          <div class="sum">그레이스는 일본 내 주요 뷰티 유통 채널인 드럭스토어와 버라이어티숍을 중심으로 채널별 최적화 전략을 구축 중이라고 6일 밝혔다. 마츠모토키요시(MCC그룹), 웰시아, 츠루하, 사츠도라, 크리에이트, 스기약국 등 주요...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">비앤비코리아</span>
+          <span class="ctype">K-뷰티 ODM/OBM</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[Who Is ?] 전우종 SK증권 대표이사 사장</span>
+          </div>
+          <div class="sum">&lt;무궁화신탁 홈페이지&gt; △다올저축은행에 &#39;마유크림&#39; 투자금 상환 &#39;마유크림(비앤비코리아)&#39; 인수금융 사건이 10년 만에 SK증권의 원금 상환으로 마무리 수순에 접어들었다고 2026년 4월2일 뉴스토마토가 단독...</div>
+          <div class="tags"><span class="tag t-invest">투자</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[더벨][비앤비코리아 IPO] 상장 앞두고 이사회 개편, 하이트진로 인사 장...</span>
+          </div>
+          <div class="sum">비앤비코리아가 기업공개(IPO)를 본격화하면서 이사회도 새롭게 꾸렸다. IPO를 위해서는 비앤비코리아 역시 상장사에 준하는 수준의 이사회를 갖춰야 한다. 지난해 말부터 기존 이사진에 더해 신규 사외이사 등을...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[더벨][비앤비코리아 IPO] 공모자금 절반 구주매출, 빚부터 갚는다</span>
+          </div>
+          <div class="sum">기업공개를 추진중인 비앤비코리아는 왜 전체 공모자금의 절반을 구주매출로 채웠을까. 시장에서는 하이트진로 오너 일가가 진백글로벌이라는 특수목적법인을 세워 비앤비코리아를 인수할 당시 일으킨 대출에...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span><span class="tag t-invest">투자</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">&#39;더마팩토리&#39; 비앤비코리아, 코스닥 상장 본격화</span>
+          </div>
+          <div class="sum">자체 브랜드 &#39;더마팩토리&#39;를 보유한 화장품 ODM(제조자개발생산) 전문기업 비앤비코리아가 코스닥 상장 절차를 본격화했다. 23일 금융투자업계에 따르면 비앤비코리아는 지난 21일 한국거래소에 코스닥 상장을 위한...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span><span class="tag t-invest">투자</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">이공이공</span>
+          <span class="ctype">K뷰티 글로벌 커머스</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2025.10</span>
+            <span class="hl">[더벨][i-point]엑스플러스, 북미 K-뷰티 시장 공략 &quot;이공이공과 협력&quot;</span>
+          </div>
+          <div class="sum">주목할 만한 대목은 북미 시장 진출을 위해 아마존 플랫폼에서 K-뷰티 성공 사례를 다수 보유한 ‘이공이공(EOEO)’과 전략적 파트너십을 체결했다는 점이다. 이공이공은 아마존뿐 아니라 코스트코(Costco), 울타뷰티...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2025.10</span>
+            <span class="hl">엑스플러스,&#39;아마존 K뷰티 성공신화&#39; 이공이공과 맞손…28년 수출 1500억...</span>
+          </div>
+          <div class="sum">특히 북미 시장 진출을 위해 아마존 내 K뷰티 성공 사례를 다수 보유한 &#39;이공이공(EOEO)&#39;과 전략적 파트너십을 체결했다. 이공이공은 아마존뿐 아니라 코스트코, 울타뷰티(Ulta Beauty), 타깃(Target), 월마트 등 북미 주요 온...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2025.10</span>
+            <span class="hl">엑스플러스, K-뷰티 본격 진출…&quot;북미 시장 공략 가속화&quot;</span>
+          </div>
+          <div class="sum">특히 북미 시장 진출을 위해 아마존 내 K-뷰티 성공 사례를 다수 보유한 &#39;이공이공(EOEO)&#39;과 전략적 파트너십을 체결했다. 이공이공은 아마존뿐 아니라 코스트코(Costco), 울타뷰티(Ulta Beauty), 타깃(Target), 월마트(Walmart) 등...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2025.09</span>
+            <span class="hl">[더벨][K뷰티 스타트업 인사이드]형주혁 이공이공 대표 &quot;북미 수출액 1조...</span>
+          </div>
+          <div class="sum">그는 &quot;국내 뷰티 업계에서 이공이공은 아마존 최다 성공사례를 배출한 기업으로 유명하다&quot;면서 &quot;단순히 유망 브랜드를 유통망에 얹는 것이 아니라 인지도 없는 단계에서 북미 소비자에게 각인시켜 아마존 차트...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">레페리</span>
+          <span class="ctype">뷰티 MCN</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.04</span>
+            <span class="hl">[뷰티톡톡] 씨앤씨인터내셔널ㆍLG생활건강ㆍ미샤ㆍ스킨1004ㆍ오니스트ㆍ...</span>
+          </div>
+          <div class="sum">플래그십 매장 등 오프라인 브랜드 기획부터 시공과 홍보 등까지 한 번에 제공한다. 앞서 비츠는 레페리가 일본 도쿄에서 연 ‘K-뷰티 셀렉트스토어(Select Store)’의 일본 현지 시공ㆍ운영 협력사로 참여했다. ohpearl@</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.04</span>
+            <span class="hl">레페리, 도쿄 &#39;K-뷰티 셀렉트스토어&#39; 온라인 특별전</span>
+          </div>
+          <div class="sum">입점 브랜드는 레페리가 보유한 뷰티 크리에이터 네트워크와 자체 데이터 지표를 기반으로 선정됐다. 다수의 크리에이터 추천 및 반응 데이터를 활용해 브랜드와 제품을 선별했다. 레페리는 이번 프로젝트가 단발성...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.04</span>
+            <span class="hl">레페리·아마존, 도쿄 &#39;K뷰티 특별전&#39; 연다</span>
+          </div>
+          <div class="sum">입점 브랜드는 레페리의 뷰티 크리에이터 데이터 기반 지표인 레페리 셀렉츠 인덱스(LSI)를 바탕으로 선정됐다. 레페리는 오프라인 셀렉트스토어에서 제품 체험을 제공하고, 아마존 재팬 특별전으로 구매 전환을...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.04</span>
+            <span class="hl">얼루어와 레페리가 함께한 ‘1% K-뷰티 셀렉트 스토어 도쿄’ 리뷰</span>
+          </div>
+          <div class="sum">레페리 ‘1% K-뷰티 셀렉트 스토어 도쿄’에서 우리는 그 해답을 찾았다. 오모테산도에 위치한 셀렉트 스토어의 외관. 얼루어 셀렉션 ‘지베르니’ 부스 앞에서 포즈를 취하는 레오제이. 레페리 전속 크리에이터 50여...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">리만코리아</span>
+          <span class="ctype">뷰티 유통</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">대구국제뷰티엑스포 11일부터 사흘간 엑스코서 개최</span>
+          </div>
+          <div class="sum">개막식에서는 지역 화장품 기업인 리만코리아가 취약계층 여성을 위한 화장품 기부로 행사에 나눔의 의미를 더할 예정이다. 이재홍 대구시 보건복지국장은 &quot;이번 박람회가 지역 뷰티산업의 경쟁력을 높이고 기업들의...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">‘제13회 대구국제뷰티엑스포’, 11~13일까지 엑스코 동관에서 개최</span>
+          </div>
+          <div class="sum">이와 함께 개막식에서는 지역 화장품 기업인 리만코리아가 사랑의열매를 통해 지역 취약계층 여성들을 위한 화장품 기부를 진행한다. 참관을 희망하는 시민은 10일 오후 6시까지 ‘2026 대구국제뷰티엑스포’ 공식...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">K뷰티 현재와 미래 한자리에... 12개국 바이어 초청 수출상담회 개최</span>
+          </div>
+          <div class="sum">이와 함께 개막식에서는 지역 화장품 기업인 리만코리아가 사랑의열매를 통해 지역 취약계층 여성들을 위한 화장품 기부를 진행하며 나눔의 의미를 더한다. 참관을 희망하는 시민은 10일 오후 6시까지 &#39;2026...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">대구국제뷰티엑스포 11일 개막… K-뷰티 현재와 미래 한자리에</span>
+          </div>
+          <div class="sum">한편 개막식에서는 지역 화장품 기업 리만코리아가 사랑의열매를 통해 지역 취약계층 여성들을 위한 화장품을 기부하며 나눔 활동에도 동참한다. 참관을 희망하는 시민은 10일 오후 6시까지 대구국제뷰티엑스포 공식...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">올리브인터내셔널</span>
+          <span class="ctype">멀티 브랜드 하우스</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[올리브인터내셔널 IPO] 넘버원 K뷰티 세르파…달바·구다이 연히트 미...</span>
+          </div>
+          <div class="sum">신한이 에이피알 성공한 이후 미래가 2연속 랜드마크 딜 확보…KB-NH 열세 지적 K뷰티 관련 기업 올리브인터내셔널의 기업공개(IPO) 주관사 경쟁이 치열해지면서 화장품 섹터 트랙레코드가 승부를 가를 핵심 변수로...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[더벨][올리브인터내셔널은 지금] &#39;브랜드 빌더&#39; 전략의 명암, 수익성 과...</span>
+          </div>
+          <div class="sum">올리브인터내셔널은 최근 수년간 K뷰티 업계에서 가장 가파른 성장세를 보인 기업 가운데 하나다. 성분에디터와 밀크터치, 마미케어를 앞세워 지난해 연결 기준 매출 2041억원을 기록했고 올해는 4000억원 수준의...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[더벨][올리브인터내셔널은 지금] 북미·유럽 확장…성장 초입 단계 ‘...</span>
+          </div>
+          <div class="sum">올리브인터내셔널이 투자업계의 관심을 받는 배경에는 해외 사업 확장 가능성이 있다. 현재 실적만 놓고 보면 이미 연매출 2000억원 규모 기업으로 성장했지만 주요 브랜드 대부분이 아직 글로벌 확장 초기 단계에...</div>
+          <div class="tags"><span class="tag t-invest">투자</span><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[더벨][올리브인터내셔널은 지금] &#39;멀티 브랜드&#39; 성공시킨 K뷰티, 4000억...</span>
+          </div>
+          <div class="sum">올리브인터내셔널은 성장 경로가 다른 편이다. 특정 브랜드에 집중하기보다 서로 다른 콘셉트와 소비자층을 가진 브랜드를 반복적으로 런칭하며 몸집을 키우는 방식에 가깝다. 첫 브랜드였던 ‘밀크터치’는 여전히...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#99e6e0">
+          <span class="cname">더파운더즈</span>
+          <span class="ctype">아누아 운영</span>
+          <span class="ccount" style="color:#0d9488">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[오늘의 뷰티] 에이피알·CJ올리브영·아누아</span>
+          </div>
+          <div class="sum">/사진=아누아 #아누아, &#39;솔로지옥5&#39; 박희선 &#39;아누아 어성초 라인&#39; 대표해 올리브영 美 매장 방문 글로벌 브랜드 빌더 기업 더파운더즈(각자대표 이선형, 이창주)가 운영하는 글로벌 뷰티 브랜드 아누아(ANUA)의 어성초 라인...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">‘솔로지옥5’ 박희선, ‘아누아 어성초 라인’ 대표해 올리브영 美 매...</span>
+          </div>
+          <div class="sum">더파운더즈(대표 이선형 · 이창주)가 전개하는 글로벌 뷰티 브랜드 &#39;아누아(ANUA)&#39;가 미국 올리브영 패서디나점 오픈을 기념해 어성초 라인 앰배서더 박희선과 함께 현지 소비자 소통에 나섰다. 아누아는 이번 입점을 계기로...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">아누아, 올리브영 미국 매장서 존재감 확대... 현지 소비자 접점 넓힌다</span>
+          </div>
+          <div class="sum">더파운더즈가 운영하는 글로벌 뷰티 브랜드 아누아(ANUA)는 어성초 라인 앰배서더 박희선이 최근 미국 올리브영 패서디나점을 방문해 현지 고객 및 크리에이터들과 소통하는 시간을 가졌다고 9일 밝혔다. 이번 방문은...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">수지 이어 이번엔 켄달…PDRN 대박 난 이 브랜드, 심상찮다</span>
+          </div>
+          <div class="sum">더파운더즈가 운영하는 아누아는 켄달 제너와 대표 제품인 ‘PDRN 캡슐 미스트’의 글로벌 캠페인을 전개할 예정이라고 1일 밝혔다. 오는 6~7일 미국 뉴욕 소호에서 몰입형 팝업스토어 ‘듀 온 더 고’(Dew On The Go)를...</div>
+          <div class="tags"><span class="tag t-global">글로벌</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="sector">
+      <div class="sector-h">
+        <span class="sbadge" style="background:#f5edfd;color:#9333ea;border-color:#d8b4fe">패션</span>
+        <span class="scount">3개사</span>
+      </div>
+      
+      <div class="card">
+        <div class="card-h" style="border-color:#d8b4fe">
+          <span class="cname">하이라이트브랜즈</span>
+          <span class="ctype">골프·라이프스타일</span>
+          <span class="ccount" style="color:#9333ea">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">말본, 창립자와 소비자 커뮤니티 행사 성료</span>
+          </div>
+          <div class="sum">스티븐 말본, 에리카 말본 부부 방한 말본 가옥 통해 정통성과 비전 이야기 하이라이트브랜즈(대표 이준권)는 5월 29일 서울 북촌에 위치한 &#39;말본 가옥&#39;에서 &#39;말본(Malbon)&#39;의 공동 창립자 스티븐 말본(Stephen Malbon)...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">의류·건축 재료·후원…이색 나눔으로 함께하는 기업들</span>
+          </div>
+          <div class="sum">9일 관련 업계에 따르면 하이라이트브랜즈는 지난달 40억원 규모의 의류와 잡화 3만9000여점을 경제적으로 어려움을 겪고 있는 장애인, 청소년, 청년 등에게 기부했다.이번 기부물품은 연령대, 생활 환경, 계절 등을 고려한...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">하이라이트브랜즈, 40억 상당 의류·잡화 3만9000점 기부</span>
+          </div>
+          <div class="sum">하이라이트브랜즈가 5월 가정의 달을 맞아 소비자가격 기준 40억원 상당의 의류와 잡화 총 3만9000여점을 기부한다고 15일 밝혔다. 다양한 라이프스타일 패션 브랜드를 전개 중인 하이라이트브랜즈는 지원 대상의 연령대와...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">상생 도모 하이라이트브랜즈, 전국 16개 비영리단체에 의류·잡화 기부</span>
+          </div>
+          <div class="sum">왼쪽부터 허재훈 하이라이트브랜즈 영업총괄상무, 김철승 시은소교회목사, 고상현 하이라이트브랜즈 경영총괄전무 하이라이트브랜즈(대표 이준권)가 5월 가정의 달을 맞아 소비자가격 기준 40억원 상당의 의류와 잡화 총...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#d8b4fe">
+          <span class="cname">피스피스스튜디오</span>
+          <span class="ctype">여성 패션</span>
+          <span class="ccount" style="color:#9333ea">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">상장 첫날이 &#39;검은 월요일&#39;…피스피스스튜디오, 20%대 급락</span>
+          </div>
+          <div class="sum">1단계 서킷 브레이커에 이어 매도 사이드카가 발동됐다. 코스닥 시장에서도 매도 사이드카가 잇따라 발동됐다. 피스피스스튜디오는 여성 브랜드 &#39;마르디 메크르디(Mardi Mercredi)&#39;를 운영하고 있다．</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">피스피스스튜디오, 코스닥 상장 첫날 &#39;급락&#39;</span>
+          </div>
+          <div class="sum">브랜드 &#39;마르디 메크르디&#39; 운영사 피스피스스튜디오가 코스닥시장 상장 첫날인 8일 장 초반 급락세다. 이날 오전 9시30분 현재 피스피스스튜디오는 공모가(2만1500원) 대비 2580원(12.0%) 내린 1만8920원에 거래되고...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">&#39;검은 월요일&#39;에 상장한 피스피스스튜디오…첫날 36% 급락</span>
+          </div>
+          <div class="sum">하지만 피스피스스튜디오의 높은 &#39;마르디 메크르디&#39; 의존도는 여전한 과제다. &#39;마르디 메크르디&#39; 관련 매출이 전체 매출의 81.4%를 차지하는 만큼, 올해 1분기 처럼 해당 브랜드 매출이 부진할 경우 기업의 전체...</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span><span class="tag t-risk">리스크</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">[특징주] &#39;마르디 메크르디&#39; 피스피스스튜디오, 따블 눈앞서 급락</span>
+          </div>
+          <div class="sum">상승폭을 빠르게 반납했고, 장중 한때 1만8020원까지 떨어지며 공모가를 밑돌았다. 피스피스스튜디오는 여성 디자이너 브랜드 &#39;마르디 메크르디(Mardi Mercredi)&#39;를 중심으로 성장한 패션·라이프스타일 기업이다.</div>
+          <div class="tags"><span class="tag t-ipo">IPO</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h" style="border-color:#d8b4fe">
+          <span class="cname">하고하우스</span>
+          <span class="ctype">패션 인큐베이터</span>
+          <span class="ccount" style="color:#9333ea">4건</span>
+        </div>
+        
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">하고하우스 &#39;테일던&#39; 유지태와 함께한 2026 여름 캠페인 공개</span>
+          </div>
+          <div class="sum">하고하우스(대표 홍정우)의 남성복 브랜드 ‘테일던(TAILDERN)’이 배우 유지태와 협업한 2026 여름 캠페인 ‘여름날은 남는다’를 공개했다. ‘여름날은 남는다’는 배우 유지태가 지닌 깊이 있는 분위기와 오랜 시간...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.06</span>
+            <span class="hl">하고하우스 전개 &#39;테일던&#39;, 유지태와 현실 남성룩 제시</span>
+          </div>
+          <div class="sum">국내 대표 브랜드 인큐베이터 하고하우스가 전개하는 남성복 브랜드 테일던(TAILDERN)이 배우 유지태와 함께한 2026 여름 캠페인 &#39;여름날은 남는다&#39;를 8일 공개했다. 이번 캠페인은 배우 유지태가 지닌 깊이 있는 이미지와...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">하고하우스 드파운드, 여름 &#39;위빙백&#39; 매출 106% 증가</span>
+          </div>
+          <div class="sum">하고하우스의 &#39;드파운드&#39;가 2026 SS(봄·여름) 시즌 대표 아이템으로 선보인 &#39;핸드크래프트 위빙 백&#39;(위빙백)이 인기를 끌고 있다고 29일 밝혔다. 드파운드에 따르면 본격적으로 여름이 시작되며 위빙백 수요가 증가한 5월...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+        <div class="news">
+          <div class="news-top">
+            <span class="date">2026.05</span>
+            <span class="hl">[부고] 홍정우 하고하우스·마뗑킴 대표 아들상</span>
+          </div>
+          <div class="sum">홍정우 하고하우스·마뗑킴 대표 아들상▲ 홍지한(향년 15세) 씨 별세▲ 홍정우(하고하우스/마뗑킴 대표)·조인숙씨 아들상▲ 빈소: 서울시 삼성서울병원 장례식장 15호실▲ 발인: 6월 1일 오전 8시▲ 장지: 용인...</div>
+          <div class="tags"><span class="tag t-biz">사업</span></div>
+        </div>
+      </div>
+    </section>
+
+  <footer>
+    본 보고서는 네이버 뉴스 검색 API 기반 자동수집 데이터로 작성되었습니다.<br>
+    투자 판단 시 반드시 공식 공시 자료 및 사업보고서를 확인하세요. · 생성 2026-06-09
+  </footer>
+
+</div>
+</body>
+</html>
