@@ -1140,6 +1140,14 @@ const PROFILES = {
 // ══════════════════════════════════════════════════
 // 패널 렌더링
 // ══════════════════════════════════════════════════
+// HTML 이스케이프 (innerHTML 주입 전 XSS 방지) — 외부(네이버) 뉴스 텍스트에 사용
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// http(s) 링크만 허용 (javascript: 등 차단)
+function safeUrl(u){ return /^https?:\/\//i.test(u || '') ? u : ''; }
+
 function openProfile(key) {
   const p = PROFILES[key];
   if (!p) return;
@@ -1201,15 +1209,21 @@ function openProfile(key) {
 
   // News
   const tagLbl = {biz:'사업',ipo:'IPO',invest:'투자',risk:'리스크',global:'글로벌',listed:'상장완료'};
-  const newsHTML = p.news.map(n => `
+  const newsHTML = p.news.map(n => {
+    const link = safeUrl(n.link);
+    const hl = esc(n.hl);
+    return `
     <div class="news-tl-item">
-      <div class="news-tl-date">${n.date}</div>
+      <div class="news-tl-date">${esc(n.date)}</div>
       <div class="news-tl-body">
-        <div class="news-tl-hl">${n.hl}</div>
-        <div class="news-tl-sum">${n.sum}</div>
-        <div class="ntags">${n.tags.map(t=>`<span class="ntag ${t}">${tagLbl[t]||t}</span>`).join('')}</div>
+        <div class="news-tl-hl">${link
+          ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--border2)">${hl}</a>`
+          : hl}</div>
+        <div class="news-tl-sum">${esc(n.sum)}</div>
+        <div class="ntags">${(n.tags||[]).map(t=>`<span class="ntag ${esc(t)}">${tagLbl[t]||esc(t)}</span>`).join('')}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // Risk
   const riskHTML = p.risks.map(r => `
@@ -1302,7 +1316,9 @@ function openProfile(key) {
   `;
 
   document.getElementById('overlay').classList.add('open');
-  document.getElementById('panel').classList.add('open');
+  const panel = document.getElementById('panel');
+  panel.dataset.key = key;
+  panel.classList.add('open');
 }
 
 function closePanel() {
@@ -1349,6 +1365,29 @@ function filterMom(mom, btn) {
     if(!any) sec.style.display='none';
   });
 }
+
+// ── 뉴스 자동 업데이트 ──
+// GitHub Actions가 매일 갱신하는 news.json을 읽어, 각 기업의 최신 뉴스로 교체한다.
+// 파일이 없거나(로컬 file:// 등) 오류면 위에 하드코딩된 뉴스를 그대로 사용(폴백).
+(async function loadLatestNews(){
+  try {
+    const res = await fetch('news.json', {cache:'no-store'});
+    if (!res.ok) return;
+    const data = await res.json();
+    const newsByKey = (data && data.news) || {};
+    Object.keys(newsByKey).forEach(key => {
+      const items = newsByKey[key];
+      if (PROFILES[key] && Array.isArray(items) && items.length) {
+        PROFILES[key].news = items;
+      }
+    });
+    // 이미 열려 있는 패널이 있으면 최신 뉴스로 다시 그린다.
+    const openKey = document.querySelector('.panel.open')?.dataset.key;
+    if (openKey) openProfile(openKey);
+  } catch (e) {
+    /* 폴백: 하드코딩된 뉴스 유지 */
+  }
+})();
 </script>
 </body>
 </html>
