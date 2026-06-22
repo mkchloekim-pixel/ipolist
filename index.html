@@ -176,6 +176,10 @@
   .news-tl-date{font-size:11.5px;font-family:var(--mono);color:var(--text3);white-space:nowrap;padding-top:3px;min-width:52px;}
   .news-tl-body{flex:1;}
   .news-tl-hl{font-size:13.5px;font-weight:500;color:var(--text);line-height:1.55;margin-bottom:4px;}
+  .news-tl-hl a{color:inherit;text-decoration:none;border-bottom:1px solid var(--border2);cursor:pointer;transition:color .12s,border-color .12s;}
+  .news-tl-hl a:hover{color:var(--accent-vertical);border-bottom-color:var(--accent-vertical);}
+  .news-tl-hl a .ext-ic{display:inline-block;vertical-align:-1px;margin-left:3px;opacity:.55;transition:opacity .12s;}
+  .news-tl-hl a:hover .ext-ic{opacity:1;}
   .news-tl-sum{font-size:12.5px;color:var(--text2);line-height:1.65;}
   .ntags{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
   .ntag{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:500;}
@@ -1235,7 +1239,7 @@ function openProfile(key) {
       <div class="news-tl-date">${esc(n.date)}</div>
       <div class="news-tl-body">
         <div class="news-tl-hl">${link
-          ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px dashed var(--border2)">${hl}</a>`
+          ? `<a href="${esc(link)}" target="_blank" rel="noopener" title="기사 원문 보기">${hl}<svg class="ext-ic" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`
           : hl}</div>
         <div class="news-tl-sum">${esc(n.sum)}</div>
         <div class="ntags">${(n.tags||[]).map(t=>`<span class="ntag ${esc(t)}">${tagLbl[t]||esc(t)}</span>`).join('')}</div>
