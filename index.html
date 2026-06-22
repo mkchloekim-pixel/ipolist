@@ -461,7 +461,10 @@
       <div class="panel-company" id="panel-company-name">-</div>
       <div class="panel-meta" id="panel-meta">-</div>
     </div>
-    <button class="panel-close" onclick="closePanel()">✕</button>
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <a id="panel-site-link" href="#" target="_blank" rel="noopener" style="display:none;"></a>
+      <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
   </div>
   <div class="panel-body" id="panel-body"></div>
 </div>
@@ -1158,6 +1161,21 @@ function openProfile(key) {
     `<div style="display:flex;align-items:center;gap:10px"><img src="${logoUrl}" style="width:32px;height:32px;border-radius:8px;object-fit:contain;background:var(--bg3);border:1px solid var(--border);padding:3px;" onerror="this.style.display='none'"><span style="color:${nameColor}">${p.name}</span></div>`;
   document.getElementById('panel-meta').textContent = p.meta;
 
+  // 헤더 우측 상단 공식 홈페이지 링크
+  const siteLink = document.getElementById('panel-site-link');
+  if (SITE_URLS[key]) {
+    siteLink.href = SITE_URLS[key];
+    siteLink.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;'
+      + 'color:var(--accent-vertical);background:var(--accent-vertical-bg);border:1px solid #c7d0fb;'
+      + 'border-radius:8px;padding:7px 12px;text-decoration:none;transition:opacity .15s;';
+    siteLink.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>공식 홈페이지';
+    siteLink.onmouseover = function(){ this.style.opacity = '.75'; };
+    siteLink.onmouseout = function(){ this.style.opacity = '1'; };
+  } else {
+    siteLink.style.display = 'none';
+    siteLink.removeAttribute('href');
+  }
+
   const outlookTitleColor = p.isListed ? 'var(--high)' : 'var(--warn)';
   const outlookTitleText = p.isListed ? '상장 완료 · 향후 전망' : '종합 IPO 전망';
 
@@ -1242,14 +1260,6 @@ function openProfile(key) {
       <span class="badge ${p.isListed ? 'listed-b' : 'ipo-b'}">${p.ipoLabel}</span>
       <span class="badge ${p.isListed ? 'listed-b' : 'ipo-b'}">${p.momLabel}</span>
       <span class="badge grey">업데이트 2026.06</span>
-      ${SITE_URLS[key] ? `<a href="${SITE_URLS[key]}" target="_blank" rel="noopener"
-        style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;
-               color:var(--accent-vertical);background:var(--accent-vertical-bg);border:1px solid #c7d0fb;
-               border-radius:6px;padding:3px 10px;text-decoration:none;flex-shrink:0;transition:opacity .15s;"
-        onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        공식 홈페이지
-      </a>` : ''}
     </div>
 
     <!-- KPI -->
